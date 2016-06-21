@@ -1,7 +1,10 @@
-a = 1;
-a = false;
-a = nil;
+module Bar {
+}
 
-function test()
-  a = true;
-end
+module Foo inherits Bar {
+  number_of_widgets = 0;
+
+  function setWidgetsToTen() {
+    number_of_widgets = 10;
+  }
+}
