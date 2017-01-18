@@ -1,2 +1,2 @@
-defmodule Lpex.Compiler do
+defmodule Vape.Compiler do
 end

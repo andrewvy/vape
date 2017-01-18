@@ -1,6 +1,6 @@
-defmodule LpexTest do
+defmodule VapeTest do
   use ExUnit.Case
-  doctest Lpex
+  doctest Vape
 
   test "the truth" do
     assert 1 + 1 == 2

@@ -1,4 +1,4 @@
-defmodule Lpex do
+defmodule Vape do
   def open_file(filename) do
     File.open(filename, [:read, :char_list])
   end
@@ -13,7 +13,7 @@ defmodule Lpex do
   def tokenize(filename \\ "test.c") do
     {:ok, file} = open_file(filename)
     code = line_loop(file)
-    {:ok, tokens, _} = :lpc.string(code)
+    {:ok, tokens, _} = :vape_lexer.string(code)
 
     File.close(file)
 
@@ -21,6 +21,6 @@ defmodule Lpex do
   end
 
   def parse(tokens) do
-    :lpc_parser.parse(tokens)
+    :vape_parser.parse(tokens)
   end
 end

@@ -1,12 +1,9 @@
-### Lpex
+### Vape
 
-lpc-inspired toy scripting language implemented on Elixir/Erlang.
+toy scripting language implemented in Elixir/Erlang for MUD scripting..
 
 ```
 module Bar {
-}
-
-module Foo inherits Bar {
   numberOfWidgets = 0;
 
   function setWidgets(count) {
