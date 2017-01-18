@@ -10,14 +10,9 @@ defmodule Vape do
     end
   end
 
-  def tokenize(filename \\ "test.c") do
-    {:ok, file} = open_file(filename)
+  def tokenize(file) do
     code = line_loop(file)
-    {:ok, tokens, _} = :vape_lexer.string(code)
-
-    File.close(file)
-
-    tokens
+    :vape_lexer.string(code)
   end
 
   def parse(tokens) do

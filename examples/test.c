@@ -1,7 +1,4 @@
-module Bar {
-}
-
-module Foo inherits Bar {
+module Foo {
   number_of_widgets = 0;
 
   function setWidgetsToTen() {

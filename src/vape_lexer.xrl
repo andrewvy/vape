@@ -8,8 +8,8 @@ WHITESPACE   = [\s\t\n\r]
 Rules.
 
 {IDENTIFIER}     : identifier_token(TokenChars, TokenLine).
-{INTEGER}        : {token, {'INTEGER', TokenLine, list_to_integer(TokenChars)}}.
-{FLOAT}          : {token, {'FLOAT', TokenLine, list_to_float(TokenChars)}}.
+{INTEGER}        : {token, {'integer', TokenLine, list_to_integer(TokenChars)}}.
+{FLOAT}          : {token, {'float', TokenLine, list_to_float(TokenChars)}}.
 \=               : {token, {'=', TokenLine}}.
 \#               : {token, {'#', TokenLine}}.
 \.               : {token, {'.', TokenLine}}.
@@ -45,12 +45,11 @@ identifier_token(Cs, L) ->
     {ok, Identifier} ->
       case is_keyword(Identifier) of
         true -> {token, {Identifier, L}};
-        false -> {token, {'IDENTIFIER', L, Identifier}}
+        false -> {token, {'identifier', L, Identifier}}
       end;
     _ -> {error,"illegal identifier"}
   end.
 
-is_keyword('inherits') -> true;
 is_keyword('module') -> true;
 is_keyword('break') -> true;
 is_keyword('do') -> true;
