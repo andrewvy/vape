@@ -7,33 +7,33 @@ WHITESPACE   = [\s\t\n\r]
 
 Rules.
 
-{IDENTIFIER}     : identifier_token(TokenChars, TokenLine).
-{INTEGER}        : {token, {'integer', TokenLine, list_to_integer(TokenChars)}}.
-{FLOAT}          : {token, {'float', TokenLine, list_to_float(TokenChars)}}.
-\=               : {token, {'=', TokenLine}}.
-\#               : {token, {'#', TokenLine}}.
-\.               : {token, {'.', TokenLine}}.
-\<               : {token, {'<', tokenline}}.
-\>               : {token, {'>', tokenline}}.
-\(               : {token, {'(', TokenLine}}.
-\)               : {token, {')', TokenLine}}.
-\{               : {token, {'{', TokenLine}}.
-\}               : {token, {'}', TokenLine}}.
-\[               : {token, {'[', TokenLine}}.
-\]               : {token, {']', TokenLine}}.
-\;               : {token, {';', TokenLine}}.
-\,               : {token, {',', TokenLine}}.
-\+               : {token, {'+', TokenLine}}.
-\-               : {token, {'-', TokenLine}}.
-\*               : {token, {'*', TokenLine}}.
-\/               : {token, {'/', TokenLine}}.
->=               : {token, {'>=', TokenLine}}.
-<=               : {token, {'<=', TokenLine}}.
-==               : {token, {'==', TokenLine}}.
-'+='             : {token, {'+=', tokenline}}.
-'-='             : {token, {'-=', tokenline}}.
-'++'             : {token, {'++', tokenline}}.
-'--'             : {token, {'--', tokenline}}.
+{IDENTIFIER}           : identifier_token(TokenChars, TokenLine).
+{INTEGER}              : {token, {'integer', TokenLine, list_to_integer(TokenChars)}}.
+{FLOAT}                : {token, {'float', TokenLine, list_to_float(TokenChars)}}.
+\=                     : {token, {'=', TokenLine}}.
+\#                     : {token, {'#', TokenLine}}.
+\.                     : {token, {'.', TokenLine}}.
+\<                     : {token, {'<', tokenline}}.
+\>                     : {token, {'>', tokenline}}.
+\(                     : {token, {'(', TokenLine}}.
+\)                     : {token, {')', TokenLine}}.
+\{                     : {token, {'{', TokenLine}}.
+\}                     : {token, {'}', TokenLine}}.
+\[                     : {token, {'[', TokenLine}}.
+\]                     : {token, {']', TokenLine}}.
+\,                     : {token, {',', TokenLine}}.
+\+                     : {token, {'+', TokenLine}}.
+\-                     : {token, {'-', TokenLine}}.
+\*                     : {token, {'*', TokenLine}}.
+\/                     : {token, {'/', TokenLine}}.
+>=                     : {token, {'>=', TokenLine}}.
+<=                     : {token, {'<=', TokenLine}}.
+==                     : {token, {'==', TokenLine}}.
+'+='                   : {token, {'+=', TokenLine}}.
+'-='                   : {token, {'-=', TokenLine}}.
+'++'                   : {token, {'++', TokenLine}}.
+'--'                   : {token, {'--', TokenLine}}.
+\"(\\.|\\\n|[^"\\])*\" : {token, {'string', TokenLine, TokenChars}}.
 {WHITESPACE}+    : skip_token.
 
 Erlang code.
@@ -63,4 +63,5 @@ is_keyword('nil') -> true;
 is_keyword('return') -> true;
 is_keyword('true') -> true;
 is_keyword('while') -> true;
+is_keyword('new') -> true;
 is_keyword(_) -> false.
