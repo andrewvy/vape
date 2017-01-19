@@ -13,32 +13,19 @@ defmodule Mix.Tasks.Vape.Run do
 
   def compile(filename) do
     IO.puts("Compiling (#{filename})..")
-
-    with {:ok, file} <- Vape.open_file(filename),
-      {:ok, tokens, _} <- Vape.tokenize(file),
-      {:ok, parsed_ast} <- Vape.parse(tokens) do
-        {:ok, parsed_ast}
-    else
-      {:error, :enoent} ->
-        IO.puts("Could not find file: (#{filename})!")
-        {:error, "No file"}
-      {:error, {line_number, :vape_parser, errors}} ->
-        Enum.each(errors, fn(error) ->
-          IO.puts("[error] (#{filename}) Line #{line_number}: #{error}")
-        end)
-        {:error, "Parser error."}
-      error ->
-        IO.inspect(error)
-        {:error, "???"}
-    end
+    Vape.Compiler.generate_ast_from_file(filename)
   end
 
   def interpret({:ok, ast}) do
-    IO.puts("[ok] Printing AST..")
-    IO.inspect(ast)
+    IO.puts("[ok] Walking AST..")
+    Vape.Compiler.walk(ast)
   end
 
-  def interpret({:error, _}) do
-    IO.puts("[error] Could not compile. Stopping..")
+  def interpret({:error, errors}) when is_list(errors) do
+    Enum.each(errors, &IO.puts/1)
+  end
+
+  def interpret({:error, error}) do
+    error |> IO.puts()
   end
 end

@@ -1,11 +1,13 @@
 object Foo {
-  number_of_widgets = 0
+  widgets = [1, 2, 3]
+  number_of_widgets = 3
 
-  function setWidgetsToTen() {
+  function setWidgetsToTwo() {
     file = new File("hello.txt")
     file.save()
     file.close()
 
-    number_of_widgets = 10
+    widgets = [1, 2]
+    number_of_widgets = 2
   }
 }

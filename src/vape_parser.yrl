@@ -14,7 +14,8 @@ identifier
 integer float string
 new 'nil' 'false' 'true'
 '=' '.'
-',' '(' ')' '{' '}'.
+',' '(' ')' '{' '}'
+'[' ']'.
 
 Rootsymbol program.
 
@@ -31,12 +32,15 @@ statements -> statements statement : '$1' ++ ['$2'].
 statement -> declaration : '$1'.
 
 %% Declaration
-declaration -> declaratorlist : { declaration, line(hd('$1')), '$1', [] }.
-declaration -> declaratorlist '=' explist : { assign, line('$2'), '$1', '$3' }.
+declaration -> declaratorlist : { declaration, line(hd('$1')), '$1' }.
+declaration -> identifier '=' explist : { assign, line('$2'), '$1', '$3' }.
 
 %% Expression List
 explist -> exp : ['$1'].
+explist -> explist ',' exp : '$1' ++ ['$3'].
 
+exp -> '[' ']' : [].
+exp -> '[' explist ']' : '$2'.
 exp -> 'nil' : '$1'.
 exp -> 'false' : '$1'.
 exp -> 'true' : '$1'.
@@ -45,7 +49,7 @@ exp -> float : '$1'.
 exp -> functiondef : '$1'.
 exp -> string : '$1'.
 exp -> function identifier functionbody : { functiondef, line('$1'), '$2', '$3' }.
-exp -> new functioncall : {'$1', '$2'}.
+exp -> new functioncall : {new, '$2'}.
 exp -> functioncall : '$1'.
 
 functioncall -> dottedname '(' ')' : { functioncall, line('$3'), '$1', [] }.
@@ -60,8 +64,8 @@ declaratorlist -> declaratorlist ',' identifier : '$1' ++ ['$3'].
 
 %% Functions
 functiondef -> function functionbody : { functiondef, line('$1'), '$2' }.
-functionbody -> '(' ')' '{' block '}' : {[], '$4'}.
-functionbody -> '(' declaratorlist ')' '{' block '}' : {'$2', '$5'}.
+functionbody -> '(' ')' '{' statements '}' : {[], '$4'}.
+functionbody -> '(' declaratorlist ')' '{' statements '}' : {'$2', '$5'}.
 
 
 Erlang code.

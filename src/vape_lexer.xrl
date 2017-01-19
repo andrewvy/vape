@@ -45,21 +45,18 @@ identifier_token(Cs, L) ->
     {ok, Identifier} ->
       case is_keyword(Identifier) of
         true -> {token, {Identifier, L}};
-        false -> {token, {'identifier', L, Identifier}}
+        false -> {token, {'identifier', L, Cs}}
       end;
     _ -> {error,"illegal identifier"}
   end.
 
 is_keyword('object') -> true;
-is_keyword('break') -> true;
-is_keyword('do') -> true;
 is_keyword('else') -> true;
 is_keyword('false') -> true;
 is_keyword('for') -> true;
 is_keyword('function') -> true;
 is_keyword('if') -> true;
-is_keyword('in') -> true;
-is_keyword('nil') -> true;
+is_keyword('null') -> true;
 is_keyword('return') -> true;
 is_keyword('true') -> true;
 is_keyword('while') -> true;
