@@ -50,7 +50,7 @@ identifier_token(Cs, L) ->
     _ -> {error,"illegal identifier"}
   end.
 
-is_keyword('module') -> true;
+is_keyword('object') -> true;
 is_keyword('break') -> true;
 is_keyword('do') -> true;
 is_keyword('else') -> true;

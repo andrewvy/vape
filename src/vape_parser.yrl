@@ -9,7 +9,7 @@ functiondef functionbody parameterlist
 
 Terminals
 identifier
-'module'
+'object'
 'function'
 integer float
 'nil' 'false' 'true'
@@ -20,7 +20,7 @@ Rootsymbol program.
 
 program -> block : '$1'.
 
-block -> block module identifier '{' block '}' : '$1' ++ [{module, line('$3'), '$3', '$5'}].
+block -> block object identifier '{' block '}' : '$1' ++ [{object, line('$3'), '$3', '$5'}].
 block -> statements : '$1'.
 
 semi -> ';'.
