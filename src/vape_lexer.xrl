@@ -34,7 +34,8 @@ Rules.
 '++'                   : {token, {'++', TokenLine}}.
 '--'                   : {token, {'--', TokenLine}}.
 \"(\\.|\\\n|[^"\\])*\" : {token, {'string', TokenLine, TokenChars}}.
-{WHITESPACE}+    : skip_token.
+#.*\n?                 : skip_token.
+{WHITESPACE}+          : skip_token.
 
 Erlang code.
 
