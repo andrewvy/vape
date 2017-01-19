@@ -8,6 +8,7 @@ functiondef functionbody functioncall
 .
 
 Terminals
+import
 identifier
 'object'
 'function'
@@ -32,6 +33,7 @@ statements -> statements statement : '$1' ++ ['$2'].
 statement -> declaration : '$1'.
 
 %% Declaration
+declaration -> import dottedname : { import, line('$1'), '$2' }.
 declaration -> declaratorlist : { declaration, line(hd('$1')), '$1' }.
 declaration -> identifier '=' explist : { assign, line('$2'), '$1', '$3' }.
 

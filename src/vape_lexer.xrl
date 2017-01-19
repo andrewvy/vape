@@ -50,6 +50,7 @@ identifier_token(Cs, L) ->
     _ -> {error,"illegal identifier"}
   end.
 
+is_keyword('import') -> true;
 is_keyword('object') -> true;
 is_keyword('else') -> true;
 is_keyword('false') -> true;

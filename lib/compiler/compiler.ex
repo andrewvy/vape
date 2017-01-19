@@ -25,6 +25,10 @@ defmodule Vape.Compiler do
     end)
   end
 
+  def walk({:import, _line, dottedname}) do
+    Logger.debug("Importing `#{dotted_name_to_string(dottedname)}`")
+  end
+
   def walk({:object, _line, {:identifier, _ident_line, identifier}, statements}) do
     Logger.debug("New object definition `#{identifier}`")
 
