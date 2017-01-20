@@ -26,13 +26,11 @@ Rules.
 \-                     : {token, {'-', TokenLine}}.
 \*                     : {token, {'*', TokenLine}}.
 \/                     : {token, {'/', TokenLine}}.
+\%                     : {token, {'%', TokenLine}}.
+\^                     : {token, {'^', TokenLine}}.
 >=                     : {token, {'>=', TokenLine}}.
 <=                     : {token, {'<=', TokenLine}}.
 ==                     : {token, {'==', TokenLine}}.
-'+='                   : {token, {'+=', TokenLine}}.
-'-='                   : {token, {'-=', TokenLine}}.
-'++'                   : {token, {'++', TokenLine}}.
-'--'                   : {token, {'--', TokenLine}}.
 \"(\\.|\\\n|[^"\\])*\" : {token, {'string', TokenLine, TokenChars}}.
 #.*\n?                 : skip_token.
 {WHITESPACE}+          : skip_token.
@@ -63,4 +61,6 @@ is_keyword('return') -> true;
 is_keyword('true') -> true;
 is_keyword('while') -> true;
 is_keyword('new') -> true;
+is_keyword('and') -> true;
+is_keyword('or') -> true;
 is_keyword(_) -> false.
