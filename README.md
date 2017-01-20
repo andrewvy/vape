@@ -1,19 +1,27 @@
-### Vape
+# Vape
 
-toy scripting language implemented in Elixir/Erlang for MUD scripting..
+Toy scripting language implemented in Elixir/Erlang.
 
-```
-object Bar {
-  numberOfWidgets = 0;
+---
 
-  function setWidgets(count) {
-    numberOfWidgets = count;
-  }
-}
-```
+:construction: :heavy_exclamation_mark: :heavy_exclamation_mark:
 
-- one file / one module
-- dynamic typing
-- 1st-class functions
-- no static methods, you must instantiate an instance of an object class.
-- interop w/ elixir
+The [The Vape Programming Language](https://andrewvy.gitbooks.io/vape/content/) guide is publicly available, but is still a WIP.
+
+None of the examples and things specified in the guide are implemented in the language.
+
+---
+
+For syntax highlighting, check out [vape-vim](https://github.com/andrewvy/vape-vim) for a Vim plugin.
+
+Other editors... to be implemented!
+
+---
+
+> Why?
+
+For educational purposes.
+
+> Why Vape?
+
+A joke that got a little bit out of hand.
