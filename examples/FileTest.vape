@@ -1,6 +1,6 @@
 import File
 
-object Testing {
+object FileTest {
   widgets = [1, 2, 3]
   number_of_widgets = 3
 

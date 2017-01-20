@@ -1,4 +1,4 @@
-object OperatorPrecendence {
+object OperatorPrecendenceTest {
   value = 0
 
   function main() {

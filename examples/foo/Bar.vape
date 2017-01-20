@@ -1,0 +1,7 @@
+object Bar {
+  string = "This is Bar"
+
+  function getString() {
+    string
+  }
+}
