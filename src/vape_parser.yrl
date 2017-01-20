@@ -82,7 +82,7 @@ functioncall -> dottedname '(' ')' : { functioncall, line('$3'), '$1', [] }.
 functioncall -> dottedname '(' declaratorlist ')' : { functioncall, line('$4'), '$1', '$3' }.
 
 dottedname -> identifier : { identifier, line('$1'), ['$1'] }.
-dottedname -> dottedname '.' identifier : { identifier, line('$2'), element(2, '$1') ++ ['$3'] }.
+dottedname -> dottedname '.' identifier : { identifier, line('$2'), element(3, '$1') ++ ['$3'] }.
 
 declaratorlist -> exp : ['$1'].
 declaratorlist -> declaratorlist ',' exp : '$1' ++ ['$3'].

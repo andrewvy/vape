@@ -6,7 +6,7 @@ Toy scripting language implemented in Elixir/Erlang.
 
 :construction: :heavy_exclamation_mark: :heavy_exclamation_mark:
 
-The [The Vape Programming Language](https://andrewvy.gitbooks.io/vape/content/) guide is publicly available, but is still a WIP.
+[The Vape Programming Language](https://andrewvy.gitbooks.io/vape/content/) guide is publicly available, but is still a WIP.
 
 None of the examples and things specified in the guide are implemented in the language.
 

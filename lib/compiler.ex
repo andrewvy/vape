@@ -1,19 +1,39 @@
+defmodule Vape.Compiler.Context do
+  defstruct filename: "", stripped_filename: "", debug?: false
+end
+
 defmodule Vape.Compiler do
+  @moduledoc """
+  Compiler module, where the AST is generated from the file and
+  compiler passes are made on the AST.
+  """
+
   require Logger
 
   def compile(filename) do
-    context = %Vape.Compiler.Context{filename: filename, debug?: true}
+    if !File.exists?(filename) do
+      raise "#{filename} does not exist."
+    end
+
+    if Path.extname(filename) != ".vape" do
+      raise "#{filename} must use the `.vape` file extension."
+    end
+
+    stripped_filename = filename |> Path.basename(".vape")
+    context = %Vape.Compiler.Context{filename: filename, stripped_filename: stripped_filename, debug?: true}
 
     Logger.info("Compiling `#{filename}`..")
 
     with {:ok, ast} <- generate_ast_from_file(filename) do
       Logger.info("1st compiler pass on `#{filename}`..")
-      walk(ast, context)
+      {:ok, walk(ast, context), %Vape.SymbolTable{}}
     else
       {:error, errors} when is_list(errors) ->
         Enum.each(errors, &Logger.error/1)
+        {:error, errors}
       {:error, error} ->
         error |> Logger.error()
+        {:error, error}
     end
   end
 
@@ -39,6 +59,11 @@ defmodule Vape.Compiler do
     Enum.each(list, fn(ast) ->
       ast |> walk(context)
     end)
+
+    # We'll just pass the AST through without doing anything
+    # to it.
+
+    list
   end
 
   @types [:integer, :string, :float, :function, :boolean, :null]
@@ -48,7 +73,11 @@ defmodule Vape.Compiler do
   def walk({:import, _line, _dotted_identifier}, _context) do
   end
 
-  def walk({:object, _line, {:identifier, _ident_line, _identifier}, statements}, context) do
+  def walk({:object, _line, {:identifier, _ident_line, identifier}, statements}, context) do
+    if to_string(identifier) != context.stripped_filename do
+      raise "object #{identifier} must match filename #{context.filename}"
+    end
+
     walk(statements, context)
   end
 
