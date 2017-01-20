@@ -2,8 +2,8 @@ object OperatorPrecendence {
   value = 0
 
   function main() {
-    value = 1 + 2 * 3
-    value = 2 * 3 + 1
+    value = 1 + 2 * 3 + 5 + 10 # 1 + (2 * 3) + 5 + 10
+    value = 2 * 3 + 1 # (2 * 3) + 1
     value == 7
   }
 }

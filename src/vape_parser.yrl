@@ -50,6 +50,7 @@ explist -> explist ',' exp : '$1' ++ ['$3'].
 
 exp -> '[' ']' : [].
 exp -> '[' explist ']' : '$2'.
+exp -> '(' exp ')' : '$2'.
 exp -> dottedname : '$1'.
 exp -> 'nil' : '$1'.
 exp -> 'false' : '$1'.

@@ -1,6 +1,22 @@
 defmodule Vape.Compiler do
   require Logger
 
+  def compile(filename) do
+    context = %Vape.Compiler.Context{filename: filename, debug?: true}
+
+    Logger.info("Compiling `#{filename}`..")
+
+    with {:ok, ast} <- generate_ast_from_file(filename) do
+      Logger.info("1st compiler pass on `#{filename}`..")
+      walk(ast, context)
+    else
+      {:error, errors} when is_list(errors) ->
+        Enum.each(errors, &Logger.error/1)
+      {:error, error} ->
+        error |> Logger.error()
+    end
+  end
+
   def generate_ast_from_file(filename) do
     with {:ok, file} <- Vape.open_file(filename),
       {:ok, tokens, _} <- Vape.tokenize(file),
@@ -11,7 +27,7 @@ defmodule Vape.Compiler do
         {:error, "No file"}
       {:error, {line_number, :vape_parser, errors}} ->
         errors = Enum.map(errors, fn(error) ->
-          "[error] (#{filename}) Line #{line_number}: #{error}"
+          "(#{filename}) Line #{line_number}: #{error}"
         end)
         {:error, errors}
       _ ->
@@ -25,36 +41,24 @@ defmodule Vape.Compiler do
     end)
   end
 
-  def walk({:import, _line, dottedname}, _context) do
-    Logger.debug("Importing `#{dotted_name_to_string(dottedname)}`")
+  @types [:integer, :string, :float, :function, :boolean, :null]
+  def walk({type, _, _value}, _context) when type in @types do
   end
 
-  def walk({:object, _line, {:identifier, _ident_line, identifier}, statements}, context) do
-    Logger.debug("New object definition `#{identifier}`")
+  def walk({:import, _line, _dotted_identifier}, _context) do
+  end
 
+  def walk({:object, _line, {:identifier, _ident_line, _identifier}, statements}, context) do
     walk(statements, context)
   end
 
-  def walk({:assign, _line, {:identifier, _ident_line, identifier}, expression_list}, context) do
-    Logger.debug("Assigning `#{identifier}` to:")
+  def walk({:assign, _line, {:identifier, _ident_line, _identifier}, expression_list}, context) do
     Enum.each(expression_list, fn(expression) ->
-      case expression do
-        {:new, exp} ->
-          exp |> walk(context)
-        {type, _, value} ->
-          Logger.debug("> [#{type}] (#{value})")
-        array when is_list(array) ->
-          Logger.debug("> Array of: ")
-          Enum.each(array, fn({type, _, value}) ->
-            Logger.debug("> > [#{type}] (#{value})")
-          end)
-        {:op, _, _, _, _} = op -> op |> walk(context)
-      end
+      expression |> walk(context)
     end)
   end
 
-  def walk({:functiondef, _line, {:identifier, _ident_line, identifier}, {function_params, function_body}}, context) do
-    Logger.debug("Defining function (#{identifier})")
+  def walk({:functiondef, _line, {:identifier, _ident_line, _identifier}, {function_params, function_body}}, context) do
     function_params |> walk(context)
     function_body |> walk(context)
   end
@@ -63,37 +67,13 @@ defmodule Vape.Compiler do
     node |> walk(context)
   end
 
-  def walk({:functioncall, _line, dotted_name, params}, _context) do
-    Logger.debug("Calling function `#{dotted_name_to_string(dotted_name)}()` with params: #{params_to_string(params)}")
+  def walk({:functioncall, _line, _dotted_identifier, _params}, _context) do
   end
 
-  @types [:integer, :string, :float, :function, :boolean, :null]
-
-  def walk({:op, _line, operation, lhs_exp, rhs_exp}, context) do
-    case lhs_exp do
-      {type, _, _} ->
-        if type in @types do
-          Logger.debug("#{params_to_string(lhs_exp)}")
-        end
-      _ -> false
-    end
-
-    case rhs_exp do
-      {type, _, _} ->
-        if type in @types do
-          Logger.debug("#{params_to_string(rhs_exp)}")
-        end
-      _ -> false
-    end
-
-
-    lhs_exp |> walk(context)
-    Logger.debug("#{Atom.to_string(operation)}")
-    rhs_exp |> walk(context)
+  def walk({:op, _line, _operation, _lhs_exp, _rhs_exp}, _context) do
   end
 
   def walk({:identifier, _line, dotted_identifier}, _context) when is_list(dotted_identifier) do
-    Logger.debug("Reference `#{dotted_name_to_string(dotted_identifier)}`")
   end
 
   def walk({_, _, list}, context) when is_list(list) do
@@ -108,15 +88,5 @@ defmodule Vape.Compiler do
   end
 
   def generate_symbol_table() do
-  end
-
-  defp dotted_name_to_string(dotted_name) when is_list(dotted_name) do
-    Enum.map_join(dotted_name, ".", fn({:identifier, _, identifier}) -> identifier end)
-  end
-
-  defp params_to_string({type, _, identifier}), do: "[#{Atom.to_string(type)}] #{identifier}"
-  defp params_to_string([]), do: "[]"
-  defp params_to_string(params) when is_list(params) do
-    Enum.map_join(params, ".", &params_to_string/1)
   end
 end
