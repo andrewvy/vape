@@ -42,7 +42,7 @@ statement -> declaration : '$1'.
 %% Declaration
 declaration -> import dottedname : { import, line('$1'), '$2' }.
 declaration -> declaratorlist : { declaration, line(hd('$1')), '$1' }.
-declaration -> identifier '=' explist : { assign, line('$2'), '$1', '$3' }.
+declaration -> identifier '=' exp : { assign, line('$2'), '$1', '$3' }.
 
 %% Expression List
 explist -> exp : ['$1'].

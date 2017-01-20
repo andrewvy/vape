@@ -1,7 +1,7 @@
-import Console
-
 object HelloWorld {
+  string = "Hello World!"
+
   function main() {
-    Console.print("Hello World!")
+    print(string)
   }
 }

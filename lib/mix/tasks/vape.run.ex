@@ -9,8 +9,8 @@ defmodule Mix.Tasks.Vape.Run do
     |> case do
       {_, [], _} -> Logger.error("Must provide a file to run")
       {_opts, [filename], _} ->
-        {:ok, ast, symbol_table} = Vape.Compiler.compile(filename)
-        vm = %Vape.VM{ast: ast, symbol_table: symbol_table}
+        {:ok, ast, _context} = Vape.Compiler.compile(filename)
+        vm = %Vape.VM{ast: ast}
         Vape.Interpreter.run(vm)
       {_, _, _} -> Logger.error("Must only provide a single file")
     end
