@@ -145,14 +145,20 @@ defmodule Vape.Interpreter do
     lhs =
       case lhs_exp do
         {:op, _, _, _, _} -> interpret(lhs_exp, vm_pid)
-        {:identifier, _, _} -> interpret(lhs_exp, vm_pid)
+        {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
+          vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(lhs_exp))
+        {:identifier, _, identifier} ->
+          vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
         {type, _, value} when type in @types -> value
       end
 
     rhs =
       case rhs_exp do
         {:op, _, _, _, _} -> interpret(rhs_exp, vm_pid)
-        {:identifier, _, _} -> interpret(rhs_exp, vm_pid)
+        {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
+          vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(rhs_exp))
+        {:identifier, _, identifier} ->
+          vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
         {type, _, value} when type in @types -> value
       end
 

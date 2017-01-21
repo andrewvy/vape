@@ -32,5 +32,13 @@ object MathTest {
 
     print("> 100 < 1")
     print(100 < 1) # returns false
+
+    # Testing variables/identifiers
+    print("> two = 1 + 1")
+    print("> two * 4")
+    two = 1 + 1
+    print(two * 4) # returns 8
+    print("> two * two")
+    print(two * two) # returns 4
   }
 }
