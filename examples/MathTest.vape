@@ -1,0 +1,36 @@
+object MathTest {
+  function main() {
+    print("> (1 + 2) * 3")
+    print((1 + 2) * 3) # returns 9
+
+    print("> 1 + 2 * 3")
+    print(1 + 2 * 3) # returns 7 instead of wrongly 9
+
+    print("> 2 * (3 + 1)")
+    print(2 * (3 + 1)) # returns 8
+
+    print("> 1 - 5")
+    print(1 - 5) # returns -4
+
+    print("> 2 ^ 2")
+    print(2 ^ 2) # returns 4
+
+    print("> 5 % 3")
+    print(5 % 3) # returns 2 modulo (remainder)
+
+    print("> 1 == 1")
+    print(1 == 1) # returns true
+
+    print("> 2 <= 1")
+    print(2 <= 1) # returns false
+
+    print("> 2 >= 1")
+    print(2 <= 1) # returns true
+
+    print("> 100 > 1")
+    print(100 > 1) # returns true
+
+    print("> 100 < 1")
+    print(100 < 1) # returns false
+  }
+}

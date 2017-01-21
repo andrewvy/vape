@@ -63,6 +63,12 @@ defmodule Vape.Interpreter do
   Simple direct AST interpreter.
   """
 
+  @types [:string, :integer, :float, :boolean]
+
+  @temporary_functions %{
+    "print" => {1, &__MODULE__.__print/1}
+  }
+
   def run(%Vape.VM{} = vm) do
     {:ok, vm_pid} = Vape.VM.Process.start_link(vm)
 
@@ -108,12 +114,6 @@ defmodule Vape.Interpreter do
     end
   end
 
-  @types [:string, :integer, :float, :boolean]
-
-  @temporary_functions %{
-    "print" => {1, &__MODULE__.__print/1}
-  }
-
   def interpret({:functioncall, _, dotted_identifier, params}, vm_pid) do
     joined_identifier = join_dotted_identifier(dotted_identifier)
 
@@ -138,6 +138,40 @@ defmodule Vape.Interpreter do
       end
     else
       # Calling a non-built-in function, look up the function AST in the symbol table.
+    end
+  end
+
+  def interpret({:op, _line, operation, lhs_exp, rhs_exp}, vm_pid) do
+    lhs =
+      case lhs_exp do
+        {:op, _, _, _, _} -> interpret(lhs_exp, vm_pid)
+        {:identifier, _, _} -> interpret(lhs_exp, vm_pid)
+        {type, _, value} when type in @types -> value
+      end
+
+    rhs =
+      case rhs_exp do
+        {:op, _, _, _, _} -> interpret(rhs_exp, vm_pid)
+        {:identifier, _, _} -> interpret(rhs_exp, vm_pid)
+        {type, _, value} when type in @types -> value
+      end
+
+    try do
+      case operation do
+        :+ -> lhs + rhs
+        :- -> lhs - rhs
+        :* -> lhs * rhs
+        :/ -> lhs / rhs
+        :^ -> :math.pow(lhs, rhs)
+        :% -> rem(lhs, rhs)
+        :== -> lhs == rhs
+        :<= -> lhs <= rhs
+        :>= -> lhs >= rhs
+        :< -> lhs < rhs
+        :> -> lhs > rhs
+      end
+    rescue
+      _ -> raise "[error] Tried to do operation (#{Atom.to_string(operation)}) on lhs: #{inspect lhs}, rhs: #{inspect rhs}"
     end
   end
 

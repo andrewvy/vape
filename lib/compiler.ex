@@ -180,6 +180,7 @@ defmodule Vape.Compiler do
             false -> raise "On line #{line}, parameter referencing `#{joined_param_identifier}` does not exist in the scope."
             true -> ""
           end
+        _ -> true
       end
     end)
   end
