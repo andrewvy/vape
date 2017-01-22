@@ -11,8 +11,19 @@ defmodule Vape.VM.ReferenceCounter do
   defstruct reference_counter: %{}
 end
 
+defmodule Vape.VM.ObjectTable do
+  defstruct objects: %{}, id_counter: 0
+end
+
 defmodule Vape.VM do
-  defstruct ast: [], stackframes: [], symbol_table: %Vape.SymbolTable{}, memory_space: %Vape.VM.MemorySpace{}
+  defstruct [
+    ast: [],
+    stack_pointer: 0,
+    stackframes: [%{}],
+    object_table: %Vape.VM.ObjectTable{},
+    memory_space: %Vape.VM.MemorySpace{},
+    garbage_collector: %Vape.VM.ReferenceCounter{}
+  ]
 end
 
 defmodule Vape.VM.Process do
@@ -30,30 +41,29 @@ defmodule Vape.VM.Process do
     pid |> GenServer.call({:lookup_in_scope, identifier})
   end
 
-  def get_symbol_table(pid) do
-    pid |> GenServer.call(:get_symbol_table)
+  def get_stack_frames(pid) do
+    pid |> GenServer.call(:get_stack_frames)
   end
 
   def handle_cast({:define_in_scope, identifier, value}, state) do
-    {:noreply, update_symbol_table(state, identifier, value)}
+    {:noreply, put_in_scope(state, identifier, value)}
   end
 
   def handle_call({:lookup_in_scope, identifier}, _from, state) do
-    symbol_table = state.symbol_table
-
-    {:reply, Map.get(symbol_table.symbols, identifier), state}
+    stackframe = Enum.at(state.stackframes, state.stack_pointer)
+    {:reply, Map.get(stackframe, identifier), state}
   end
 
-  def handle_call(:get_symbol_table, _from, state) do
-    {:reply, state.symbol_table, state}
+  def handle_call(:get_stack_frames, _from, state) do
+    {:reply, state.stackframes, state}
   end
 
-  defp update_symbol_table(state, identifier, value) do
-    symbol_table = state.symbol_table
-
+  defp put_in_scope(state, identifier, value) do
     %{
       state |
-      symbol_table: %{ symbol_table | symbols: Map.put(symbol_table.symbols, identifier, value) }
+      stackframes: List.update_at(state.stackframes, state.stack_pointer, fn(old_frame) ->
+        Map.put(old_frame, identifier, value)
+      end)
     }
   end
 end
