@@ -162,15 +162,18 @@ defmodule Vape.Compiler do
   end
 
   @temporary_functions ["print"]
-  def walk({:functioncall, line, dotted_identifier, params}, context) do
-    identifier = join_dotted_identifier(dotted_identifier)
+  def walk({:functioncall, _line, _dotted_identifier, params}, context) do
+    # identifier = join_dotted_identifier(dotted_identifier)
 
-    if not identifier in @temporary_functions do
-      case context |> Vape.Compiler.ContextServer.check_symbol_table(identifier) do
-        false -> raise "On line #{line}, function call to #{identifier}() does not exist."
-        true -> ""
-      end
-    end
+    # [temporary]
+    # @todo(vy): Must add all functions to symbol table before checking function calls.
+
+    # if not identifier in @temporary_functions do
+    #   case context |> Vape.Compiler.ContextServer.check_symbol_table(identifier) do
+    #     false -> raise "On line #{line}, function call to #{identifier}() does not exist."
+    #     true -> ""
+    #   end
+    # end
 
     Enum.each(params, fn(param) ->
       case param do
