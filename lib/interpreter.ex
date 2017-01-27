@@ -1,7 +1,3 @@
-defmodule Vape.VM.MemorySpace do
-  defstruct space: %{}
-end
-
 defmodule Vape.VM.ReferenceCounter do
   @moduledoc """
   Keeps track of objects and their associated reference count
@@ -45,7 +41,7 @@ defmodule Vape.ObjectInstance do
 end
 
 defmodule Vape.VM.ObjectTable do
-  defstruct objects: %{}, id_counter: 0
+  defstruct objects: %{}, id_counter: -1
 end
 
 defmodule Vape.VM do
@@ -69,10 +65,10 @@ defmodule Vape.VM do
     stackframes: [%{}],
 
     # Holds a table of ObjectDefinitions.
-    object_table: %{},
+    object_definition_table: %{},
 
-    # Space for instantiated objects.
-    memory_space: %Vape.VM.MemorySpace{},
+    # Holds instantiated Objects.
+    object_table: %Vape.VM.ObjectTable{},
 
     # [temporary]
     # Holds a simple reference counting mechanism to garbage collect
@@ -149,10 +145,12 @@ defmodule Vape.VM.Process do
   This instantiated object is then stored in the VM's memory space.
   """
   @spec instantiate_object(pid(), String.t) :: {:ok, {:object, non_neg_integer()}} | {:error, :undefined_object}
-  def instantiate_object(_pid, _identifier) do
-    # @todo(vy)
-    # Create a %Vape.ObjectInstance{} and put it in VM MemorySpace.
-    # Return that object's unique identifier.
+  def instantiate_object(pid, identifier) do
+    pid |> GenServer.call({:instantiate_object, identifier})
+  end
+
+  def enter_object(pid, object_instance_id) do
+    pid |> GenServer.cast({:enter_object, object_instance_id})
   end
 
   @doc """
@@ -178,12 +176,37 @@ defmodule Vape.VM.Process do
     {:noreply, define_function_in_object(state, function_definition)}
   end
 
+  def handle_cast({:enter_object, object_instance_id}, state) do
+    {:noreply, Map.put(state, :object_pointer, object_instance_id)}
+  end
+
   def handle_call({:lookup_object_definition, identifier}, _from, state) do
-    {:reply, Map.get(state.object_table, identifier), state}
+    {:reply, Map.get(state.object_definition_table, identifier), state}
   end
 
   def handle_call(:lookup_current_object_definition, _from, state) do
-    {:reply, Map.get(state.object_table, state.defined_object_pointer), state}
+    {:reply, Map.get(state.object_definition_table, state.defined_object_pointer), state}
+  end
+
+  # Create a %Vape.ObjectInstance{} and put it in VM object_table.
+  # Return that object's unique identifier.
+  def handle_call({:instantiate_object, identifier}, _from, state) do
+    object_instance = %Vape.ObjectInstance{
+      id: state.object_table.id_counter + 1,
+      object_identifier: identifier,
+      stackframe: %{}
+    }
+
+    new_state = %{
+      state |
+      object_table: %{
+        state.object_table |
+        id_counter: object_instance.id,
+        objects: Map.put(state.object_table.objects, object_instance.id, object_instance)
+       }
+    }
+
+    {:reply, {:object, identifier, object_instance.id}, new_state}
   end
 
   # {:lookup_in_scope, identifier}
@@ -214,7 +237,7 @@ defmodule Vape.VM.Process do
   end
 
   defp define_function_in_object(state, function_definition) do
-    object_definition = Map.get(state.object_table, state.defined_object_pointer)
+    object_definition = Map.get(state.object_definition_table, state.defined_object_pointer)
 
     state
     |> update_object_definition(%{
@@ -226,7 +249,7 @@ defmodule Vape.VM.Process do
   defp update_object_definition(state, object_definition) do
     %{
       state |
-      object_table: Map.put(state.object_table, object_definition.identifier, object_definition),
+      object_definition_table: Map.put(state.object_definition_table, object_definition.identifier, object_definition),
       defined_object_pointer: object_definition.identifier
     }
   end
@@ -249,11 +272,12 @@ defmodule Vape.Interpreter do
     # Interpret the current AST to define all the objects.
     interpret(vm.ast, vm_pid)
 
-    # Then, use the last defined Object's main function as the entrypoint.
+    # Get the last object defined, and instantiate it.
     last_object = vm_pid |> Vape.VM.Process.lookup_current_object_definition()
+    main_object_instance = vm_pid |> Vape.VM.Process.instantiate_object(last_object.identifier)
 
-    # [temporary]
-    # simple check if main function exists.
+    # Enter instantiated object scope.
+    vm_pid |> Vape.VM.Process.enter_object(main_object_instance)
 
     entry_point = last_object.functions["main"]
     if entry_point do
