@@ -311,16 +311,7 @@ defmodule Vape.Interpreter do
   end
 
   def interpret({:assign, _, {:identifier, _, identifier}, rhs_exp}, vm_pid) do
-    value =
-      case rhs_exp do
-        {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(rhs_exp))
-        {:identifier, _, identifier} ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
-        _ ->
-          interpret(rhs_exp, vm_pid)
-      end
-
+    value = interpret(rhs_exp, vm_pid)
     vm_pid |> Vape.VM.Process.define_in_scope(to_string(identifier), value)
   end
 
@@ -349,14 +340,7 @@ defmodule Vape.Interpreter do
       {func_arity, func} = @temporary_functions[joined_identifier]
 
       values = Enum.map(params, fn(param) ->
-        case param do
-          {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
-            vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(param))
-          {:identifier, _, identifier} ->
-            vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
-          _ ->
-            interpret(param, vm_pid)
-        end
+        interpret(param, vm_pid)
       end)
 
       if Enum.count(values) == func_arity do
@@ -370,25 +354,8 @@ defmodule Vape.Interpreter do
   end
 
   def interpret({:op, _line, operation, lhs_exp, rhs_exp}, vm_pid) do
-    lhs =
-      case lhs_exp do
-        {:op, _, _, _, _} -> interpret(lhs_exp, vm_pid)
-        {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(lhs_exp))
-        {:identifier, _, identifier} ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
-        {type, _, value} when type in @types -> value
-      end
-
-    rhs =
-      case rhs_exp do
-        {:op, _, _, _, _} -> interpret(rhs_exp, vm_pid)
-        {:identifier, _, dotted_identifier} when is_list(dotted_identifier) ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(rhs_exp))
-        {:identifier, _, identifier} ->
-          vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
-        {type, _, value} when type in @types -> value
-      end
+    lhs = interpret(lhs_exp, vm_pid)
+    rhs = interpret(rhs_exp, vm_pid)
 
     try do
       case operation do
@@ -407,6 +374,14 @@ defmodule Vape.Interpreter do
     rescue
       _ -> raise "[error] Tried to do operation (#{Atom.to_string(operation)}) on lhs: #{inspect lhs}, rhs: #{inspect rhs}"
     end
+  end
+
+  def interpret({:identifier, _, dotted_identifiers} = identifier, vm_pid) when is_list(dotted_identifiers) do
+    vm_pid |> Vape.VM.Process.lookup_in_scope(join_dotted_identifier(identifier))
+  end
+
+  def interpret({:identifier, _, identifier}, vm_pid) do
+    vm_pid |> Vape.VM.Process.lookup_in_scope(identifier)
   end
 
   def interpret({type, _, value}, _vm_pid) when type in @types do
