@@ -1,67 +1,33 @@
 defmodule Vape.Compiler.Context do
-  defstruct filename: "", stripped_filename: "", debug?: false, pid: nil, symbol_table: %Vape.SymbolTable{}
+  defstruct filename: "", stripped_filename: "", debug?: false, symbol_table: %Vape.SymbolTable{}
 end
 
-defmodule Vape.Compiler.ContextServer do
-  use GenServer
-
-  def start_link(context) do
-    GenServer.start_link(__MODULE__, context, [])
+defmodule Vape.Compiler.ContextUtils do
+  def set_context(context) do
+    Process.put(:context, context)
   end
 
-  def init(context) do
-    {:ok, %{context | pid: self()}}
+  def get_filename() do
+    Process.get(:context).filename
   end
 
-  def get_context(pid) do
-    pid |> GenServer.call(:get_context)
+  def get_stripped_filename() do
+    Process.get(:context).stripped_filename
   end
 
-  def get_filename(pid) do
-    pid |> GenServer.call(:get_filename)
+  def check_symbol_table(identifier) do
+    symbol_table = Process.get(:context).symbol_table
+    Map.has_key?(symbol_table.symbols, identifier)
   end
 
-  def get_stripped_filename(pid) do
-    pid |> GenServer.call(:get_stripped_filename)
-  end
-
-  def add_to_symbol_table(pid, identifier, type) do
-    pid |> GenServer.call({:add_to_symbol_table, identifier, type})
-  end
-
-  def check_symbol_table(pid, identifier) do
-    pid |> GenServer.call({:check_symbol_table, identifier})
-  end
-
-  def handle_call(:get_filename, _from, state) do
-    {:reply, state.filename, state}
-  end
-
-  def handle_call(:get_stripped_filename, _from, state) do
-    {:reply, state.stripped_filename, state}
-  end
-
-  def handle_call(:get_context, _from, state) do
-    {:reply, state, state}
-  end
-
-  def handle_call({:add_to_symbol_table, identifier, type}, _from, state) do
-    {:reply, :ok, update_symbol_table(state, identifier, type)}
-  end
-
-  def handle_call({:check_symbol_table, identifier}, _from, state) do
-    symbol_table = state.symbol_table
-
-    {:reply, Map.has_key?(symbol_table.symbols, identifier), state}
-  end
-
-  defp update_symbol_table(context, identifier, type) do
+  def update_symbol_table(identifier, type) do
+    context = Process.get(:context)
     symbol_table = context.symbol_table
 
-    %{
-      context |
-      symbol_table: %{ symbol_table | symbols: Map.put(symbol_table.symbols, identifier, type) }
-    }
+    Process.put(
+      :context,
+      Map.put(context, :symbol_table, %{ symbol_table | symbols: Map.put(symbol_table.symbols, identifier, type) })
+    )
   end
 end
 
@@ -84,10 +50,10 @@ defmodule Vape.Compiler do
 
     stripped_filename = filename |> Path.basename(".vape")
     context = %Vape.Compiler.Context{filename: filename, stripped_filename: stripped_filename, debug?: true}
-    {:ok, context_pid} = Vape.Compiler.ContextServer.start_link(context)
+    Vape.Compiler.ContextUtils.set_context(context)
 
     with {:ok, ast} <- generate_ast_from_file(filename) do
-      {:ok, walk(ast, context_pid), context_pid}
+      {:ok, walk(ast)}
     else
       {:error, errors} when is_list(errors) ->
         Enum.each(errors, &Logger.error/1)
@@ -116,9 +82,9 @@ defmodule Vape.Compiler do
     end
   end
 
-  def walk(list, context) when is_list(list) do
+  def walk(list) when is_list(list) do
     Enum.each(list, fn(ast) ->
-      ast |> walk(context)
+      walk(ast)
     end)
 
     # We'll just pass the AST through without doing anything
@@ -128,48 +94,48 @@ defmodule Vape.Compiler do
   end
 
   @types [:integer, :string, :float, :function, :boolean, :null]
-  def walk({type, _, _value}, _context) when type in @types do
+  def walk({type, _, _value}) when type in @types do
   end
 
-  def walk({:import, _line, dotted_identifier}, context) do
+  def walk({:import, _line, dotted_identifier}) do
     identifier = join_dotted_identifier(dotted_identifier)
-    context |> Vape.Compiler.ContextServer.add_to_symbol_table(identifier, :import)
+    Vape.Compiler.ContextUtils.update_symbol_table(identifier, :import)
   end
 
-  def walk({:object, _line, {:identifier, _ident_line, identifier}, statements}, context) do
-    if to_string(identifier) != Vape.Compiler.ContextServer.get_stripped_filename(context) do
-      raise "object #{identifier} must match filename #{Vape.Compiler.ContextServer.get_filename(context)}"
+  def walk({:object, _line, {:identifier, _ident_line, identifier}, statements}) do
+    if to_string(identifier) != Vape.Compiler.ContextUtils.get_stripped_filename() do
+      raise "object #{identifier} must match filename #{Vape.Compiler.ContextUtils.get_filename()}"
     end
 
-    context |> Vape.Compiler.ContextServer.add_to_symbol_table(to_string(identifier), :object)
+    Vape.Compiler.ContextUtils.update_symbol_table(to_string(identifier), :object)
 
-    walk(statements, context)
+    walk(statements)
   end
 
-  def walk({:assign, _line, {:identifier, _ident_line, identifier}, _expression}, context) do
-    context |> Vape.Compiler.ContextServer.add_to_symbol_table(to_string(identifier), :assignment)
+  def walk({:assign, _line, {:identifier, _ident_line, identifier}, _expression}) do
+    Vape.Compiler.ContextUtils.update_symbol_table(to_string(identifier), :assignment)
   end
 
-  def walk({:functiondef, _line, {:identifier, _ident_line, identifier}, {function_params, function_body}}, context) do
-    context |> Vape.Compiler.ContextServer.add_to_symbol_table(to_string(identifier), :function)
+  def walk({:functiondef, _line, {:identifier, _ident_line, identifier}, {function_params, function_body}}) do
+    Vape.Compiler.ContextUtils.update_symbol_table(to_string(identifier), :function)
 
-    function_params |> walk(context)
-    function_body |> walk(context)
+    function_params |> walk()
+    function_body |> walk()
   end
 
-  def walk({:new, node}, context) do
-    node |> walk(context)
+  def walk({:new, node}) do
+    node |> walk()
   end
 
   @temporary_functions ["print"]
-  def walk({:functioncall, _line, _dotted_identifier, params}, context) do
+  def walk({:functioncall, _line, _dotted_identifier, params}) do
     # identifier = join_dotted_identifier(dotted_identifier)
 
     # [temporary]
     # @todo(vy): Must add all functions to symbol table before checking function calls.
 
     # if not identifier in @temporary_functions do
-    #   case context |> Vape.Compiler.ContextServer.check_symbol_table(identifier) do
+    #   case Vape.Compiler.ContextUtils.check_symbol_table(identifier) do
     #     false -> raise "On line #{line}, function call to #{identifier}() does not exist."
     #     true -> ""
     #   end
@@ -179,7 +145,7 @@ defmodule Vape.Compiler do
       case param do
         {:identifier, line, param_identifier} when is_list(param_identifier) ->
           joined_param_identifier = join_dotted_identifier(param)
-          case context |> Vape.Compiler.ContextServer.check_symbol_table(joined_param_identifier) do
+          case Vape.Compiler.ContextUtils.check_symbol_table(joined_param_identifier) do
             false -> raise "On line #{line}, parameter referencing `#{joined_param_identifier}` does not exist in the scope."
             true -> ""
           end
@@ -188,28 +154,25 @@ defmodule Vape.Compiler do
     end)
   end
 
-  def walk({:op, _line, _operation, _lhs_exp, _rhs_exp}, _context) do
+  def walk({:op, _line, _operation, _lhs_exp, _rhs_exp}) do
   end
 
-  def walk({:identifier, _line, dotted_identifier}, _context) when is_list(dotted_identifier) do
+  def walk({:identifier, _line, dotted_identifier}) when is_list(dotted_identifier) do
   end
 
-  def walk({_, _, list}, context) when is_list(list) do
-    list |> walk(context)
+  def walk({_, _, list}) when is_list(list) do
+    list |> walk()
   end
 
-  def walk({_, _, _, list}, context) when is_list(list) do
-    list |> walk(context)
+  def walk({_, _, _, list}) when is_list(list) do
+    list |> walk()
   end
 
-  def walk({_, _, _}, _context) do
+  def walk({_, _, _}) do
   end
 
   def join_dotted_identifier({:identifier, _, identifiers}) when is_list(identifiers) do
     identifiers
     |> Enum.map_join(".", fn({:identifier, _, name}) -> name end)
-  end
-
-  def generate_symbol_table() do
   end
 end
