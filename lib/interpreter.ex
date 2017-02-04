@@ -7,13 +7,13 @@ defmodule Vape.VM.ReferenceCounter do
   defstruct reference_counter: %{}
 end
 
-defmodule Vape.ObjectDefinition do
+defmodule Vape.Object do
   @moduledoc """
   This struct defines an Object.
   """
 
   defstruct [
-    identifier: "",
+    identifier: nil,
     instance_variables: %{},
     functions: %{}
   ]
@@ -29,14 +29,6 @@ defmodule Vape.FunctionDefinition do
     arity: 0,
     parameters: [],
     ast: []
-  ]
-end
-
-defmodule Vape.ObjectInstance do
-  defstruct [
-    id: 0,
-    object_identifier: "",
-    stackframe: %{}
   ]
 end
 
@@ -63,9 +55,6 @@ defmodule Vape.VM do
 
     # Holds a list of stackframes, that will get popped and pushed.
     stackframes: [%{}],
-
-    # Holds a table of ObjectDefinitions.
-    object_definition_table: %{},
 
     # Holds instantiated Objects.
     object_table: %Vape.VM.ObjectTable{},
@@ -107,7 +96,7 @@ defmodule Vape.VM.Process do
   This object definition will contain its functions AST, as well as its
   exported functions and instance variables.
   """
-  def define_object(pid, %Vape.ObjectDefinition{} = object_definition) do
+  def define_object(pid, %Vape.Object{} = object_definition) do
     pid |> GenServer.cast({:define_object, object_definition})
   end
 
@@ -121,7 +110,7 @@ defmodule Vape.VM.Process do
   end
 
   @doc """
-  Returns an ObjectDefinition if it exists currently within our object
+  Returns an Object if it exists currently within our object
   table.
 
   Otherwise, it means the identifier in question does not reference a
@@ -132,14 +121,14 @@ defmodule Vape.VM.Process do
   end
 
   @doc """
-  Return current ObjectDefinition, using the VM's current `defined_object_pointer`.
+  Return current Object, using the VM's current `defined_object_pointer`.
   """
   def lookup_current_object_definition(pid) do
     pid |> GenServer.call(:lookup_current_object_definition)
   end
 
   @doc """
-  Given an ObjectDefinition, instantiates an object from that definition
+  Given an Object, instantiates an object from that definition
   and returns an object identifier to that new instance.
 
   This instantiated object is then stored in the VM's memory space.
@@ -181,32 +170,30 @@ defmodule Vape.VM.Process do
   end
 
   def handle_call({:lookup_object_definition, identifier}, _from, state) do
-    {:reply, Map.get(state.object_definition_table, identifier), state}
+    {:reply, Map.get(state.object_table.objects, identifier), state}
   end
 
   def handle_call(:lookup_current_object_definition, _from, state) do
-    {:reply, Map.get(state.object_definition_table, state.defined_object_pointer), state}
+    {:reply, Map.get(state.object_table.objects, state.defined_object_pointer), state}
   end
 
-  # Create a %Vape.ObjectInstance{} and put it in VM object_table.
+  # Create a %Vape.Object{} and put it in VM object_table.
   # Return that object's unique identifier.
   def handle_call({:instantiate_object, identifier}, _from, state) do
-    object_instance = %Vape.ObjectInstance{
-      id: state.object_table.id_counter + 1,
-      object_identifier: identifier,
-      stackframe: %{}
+    object_instance = %Vape.Object{
+      identifier: state.object_table.id_counter + 1
     }
 
     new_state = %{
       state |
       object_table: %{
         state.object_table |
-        id_counter: object_instance.id,
-        objects: Map.put(state.object_table.objects, object_instance.id, object_instance)
+        id_counter: object_instance.identifier,
+        objects: Map.put(state.object_table.objects, object_instance.identifier, object_instance)
        }
     }
 
-    {:reply, {:object, identifier, object_instance.id}, new_state}
+    {:reply, {:object, identifier, object_instance.identifier}, new_state}
   end
 
   # {:lookup_in_scope, identifier}
@@ -237,7 +224,7 @@ defmodule Vape.VM.Process do
   end
 
   defp define_function_in_object(state, function_definition) do
-    object_definition = Map.get(state.object_definition_table, state.defined_object_pointer)
+    object_definition = Map.get(state.object_table.objects, state.defined_object_pointer)
 
     state
     |> update_object_definition(%{
@@ -249,7 +236,10 @@ defmodule Vape.VM.Process do
   defp update_object_definition(state, object_definition) do
     %{
       state |
-      object_definition_table: Map.put(state.object_definition_table, object_definition.identifier, object_definition),
+      object_table: %{
+        state.object_table |
+        objects: Map.put(state.object_table.objects, object_definition.identifier, object_definition),
+      },
       defined_object_pointer: object_definition.identifier
     }
   end
@@ -278,8 +268,8 @@ defmodule Vape.Interpreter do
 
     # Enter instantiated object scope.
     vm_pid |> Vape.VM.Process.enter_object(main_object_instance)
-
     entry_point = last_object.functions["main"]
+
     if entry_point do
       interpret(entry_point.ast, vm_pid)
     else
@@ -297,7 +287,7 @@ defmodule Vape.Interpreter do
   def interpret({:object, _, {:identifier, _, identifier}, body}, vm_pid) do
     # [temporary]
     # @todo(vy) Check all instance variables and put them in here.
-    object_definition = %Vape.ObjectDefinition{
+    object_definition = %Vape.Object{
       identifier: to_string(identifier)
     }
 
@@ -316,13 +306,6 @@ defmodule Vape.Interpreter do
   end
 
   def interpret({:functiondef, _, {:identifier, _, identifier}, {params, body}}, vm_pid) do
-    # [temporary]
-    # if main() is defined, immediately execute.
-    # case to_string(identifier) do
-    #   "main" -> interpret(body, vm_pid)
-    #   _ -> vm_pid |> Vape.VM.Process.define_in_scope(to_string(identifier), body)
-    # end
-
     function_definition = %Vape.FunctionDefinition{
       identifier: to_string(identifier),
       arity: Enum.count(params),
