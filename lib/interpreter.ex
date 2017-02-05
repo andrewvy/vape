@@ -7,10 +7,6 @@ defmodule Vape.VM.ReferenceCounter do
   defstruct reference_counter: %{}
 end
 
-defmodule Vape.VM.ObjectTable do
-  defstruct objects: %{}, id_counter: -1
-end
-
 defmodule Vape.VM do
   defstruct [
     # [temporary]
@@ -32,7 +28,7 @@ defmodule Vape.VM do
     stackframes: [%{}],
 
     # Holds instantiated Objects.
-    object_table: %Vape.VM.ObjectTable{},
+    object_table: %Vape.ObjectTable{},
 
     # [temporary]
     # Holds a simple reference counting mechanism to garbage collect

@@ -1,5 +1,11 @@
 defmodule Vape.Compiler.Context do
-  defstruct filename: "", stripped_filename: "", debug?: false, symbol_table: %Vape.SymbolTable{}
+  defstruct [
+    filename: "",
+    stripped_filename: "",
+    debug?: false,
+    symbol_table: %Vape.SymbolTable{},
+    object_table: %Vape.ObjectTable{}
+  ]
 end
 
 defmodule Vape.Compiler.ContextUtils do
@@ -28,6 +34,15 @@ defmodule Vape.Compiler.ContextUtils do
       :context,
       Map.put(context, :symbol_table, %{ symbol_table | symbols: Map.put(symbol_table.symbols, identifier, type) })
     )
+  end
+
+  def define_object() do
+  end
+
+  def define_function() do
+  end
+
+  def define_variable() do
   end
 end
 
