@@ -1,0 +1,37 @@
+----
+TODO
+----
+
+@todo Compiler should directory walk to build the object table (one file = one object)
+
+#   Main.vape
+# - Lib/
+#     Game.vape
+#     Networking.vape
+#     Player.vape
+#   - Rooms/
+#       MainRoom.vape
+
+The above directory structure will namespace these object files accordingly:
+
+- Main
+- Lib.Game
+- Lib.Networking
+- Lib.Player
+- Lib.Rooms.MainRoom
+
+first version: should not expose directories as objects
+next iteration: directories should be treated as objects.
+
+-> new Lib.Game()
+-> Lib.files()
+
+?
+
+---
+
+@todo Make objects their own process.
+
+Send messages to execute object functions. (ex: like simplified genservers)
+
+[object 1] - - - - {:function_call, FUNCTION_IDENTIFIER, [arguments]} - - - -> [object 2]

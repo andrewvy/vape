@@ -1,5 +1,6 @@
 defmodule Vape.Compiler.Context do
   defstruct [
+    ast: [],
     filename: "",
     stripped_filename: "",
     debug?: false,
@@ -11,6 +12,10 @@ end
 defmodule Vape.Compiler.ContextUtils do
   def set_context(context) do
     Process.put(:context, context)
+  end
+
+  def get_context() do
+    Process.get(:context)
   end
 
   def get_filename() do
@@ -54,7 +59,54 @@ defmodule Vape.Compiler do
 
   require Logger
 
+  # Recursive dir walk to compile each .vape file.
   def compile(filename) do
+    if !File.exists?(filename) do
+      raise "#{filename} does not exist."
+    end
+
+    if Path.extname(filename) != ".vape" do
+      raise "#{filename} must use the `.vape` file extension."
+    end
+
+    fileroot = Path.dirname(filename)
+    files = [filename | Vape.Utils.recursive_file_walk(fileroot)]
+
+    files
+    |> Enum.map(&(Task.async(__MODULE__, :compile_single_file, [&1])))
+    |> Task.yield_many
+    |> Enum.reduce(%Vape.Compiler.Context{}, fn(task, acc) ->
+      {_, task_result} = task
+
+      # Yield the result of concurrent compiler tasks
+      # If :ok, merge the compiler context with the acc
+      # If :error, compiler error has occured with this file.
+      case task_result do
+        {:ok, result} ->
+          {:ok, compiler_context} = result
+
+          # @todo make pretty
+
+          %{
+            acc |
+            ast: compiler_context.ast,
+            filename: compiler_context.filename,
+            stripped_filename: compiler_context.stripped_filename,
+            symbol_table: compiler_context.symbol_table,
+            object_table: %{
+              acc.object_table |
+              objects: Map.merge(
+                         compiler_context.object_table.objects,
+                         acc.object_table.objects
+                       )
+            }
+          }
+        {:error, _} -> Logger.error("Something wrong happened.")
+      end
+    end)
+  end
+
+  def compile_single_file(filename) do
     if !File.exists?(filename) do
       raise "#{filename} does not exist."
     end
@@ -68,7 +120,15 @@ defmodule Vape.Compiler do
     Vape.Compiler.ContextUtils.set_context(context)
 
     with {:ok, ast} <- generate_ast_from_file(filename) do
-      {:ok, walk(ast)}
+      context = Vape.Compiler.ContextUtils.get_context()
+
+      Vape.Compiler.ContextUtils.set_context(%{context |
+        ast: ast
+      })
+
+      walk(ast)
+
+      {:ok, Vape.Compiler.ContextUtils.get_context()}
     else
       {:error, errors} when is_list(errors) ->
         Enum.each(errors, &Logger.error/1)
@@ -105,7 +165,7 @@ defmodule Vape.Compiler do
     # We'll just pass the AST through without doing anything
     # to it.
 
-    list
+    Vape.Compiler.ContextUtils.get_context()
   end
 
   @types [:integer, :string, :float, :function, :boolean, :null]

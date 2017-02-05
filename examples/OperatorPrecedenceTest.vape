@@ -1,9 +1,0 @@
-object OperatorPrecendenceTest {
-  value = 0
-
-  function main() {
-    value = 1 + 2 * 3 + 5 + 10 # 1 + (2 * 3) + 5 + 10
-    value = 2 * 3 + 1 # (2 * 3) + 1
-    value == 7
-  }
-}
